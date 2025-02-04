@@ -58,8 +58,8 @@ def get_data_by_periods(request):
     return result_success(data)
 
 # 开始预测
-@url('laoliu/ssq/predict/', name='predict_api')
-def predict_api(request):
+@url('laoliu/ssq/predictByFrequency/', name='predictByFrequency_api')
+def predictByFrequency(request):
     logger.info("正在预测...")
     # 得到页面上传过来的数据`?periods=${this.periods}&redBalls=${this.redBalls.join(",")}&blueBall=${this.blueBall}`
     periods = request.GET.get('periods')
@@ -78,7 +78,7 @@ def predict_api(request):
     data = df.head(int(periods)).to_dict(orient='records')
     # 将data转换为df数据类型
     data = pd.DataFrame(data)
-    res = SsqPredict().train_and_predict(data, redBalls_list)
+    res = SsqPredict().predictByFrequency(data, redBalls_list)
     print('预测的结果',res)
     return result_success(res)
 
@@ -95,7 +95,10 @@ def predictByIssue(request):
     if df is None:
         logger.error("缓存中的数据为空")
         return result_error(None, message='缓存中的数据为空')
+    if issue is None:
+        issue = df.iloc[-1]['issueNumber']
 
+    issue = int(issue)
     data = df.head(int(periods)).to_dict(orient='records')
     # 将data转换为df数据类型
     data = pd.DataFrame(data)

@@ -5,17 +5,22 @@ from collections import Counter
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model._base import LinearRegression
 from sklearn.model_selection import train_test_split
 
 class SsqPredict:
     # 简单预测模型：输入6个红球和1个蓝球，返回下一个预测的号码
-    def train_and_predict(self,data, input_red_balls):
+    def predictByFrequency(self, data, input_red_balls, num_predictions=5):
+        print("正在预测...",input_red_balls)
         """
         简化的双色球预测模型
-        输入历史数据 + 6个红球，输出预测结果。
+        输入历史数据 + 6个红球，输出多组预测结果。
         """
+        """
+           简化的双色球预测模型
+           输入历史数据 + 6个红球，输出多组预测结果。
+           """
         ### 数据预处理 ###
         # 确保输入的列名与数据对齐
         red_ball_columns = ['redBall1', 'redBall2', 'redBall3', 'redBall4', 'redBall5', 'redBall6']
@@ -34,58 +39,76 @@ class SsqPredict:
         # 删除包含 NaN 的行
         data.dropna(inplace=True)
 
-        ### 红球预测 ###
-        predicted_red_balls = []  # 储存每个红球模型的预测结果
+        ### 预测逻辑 ###
+        formatted_predictions = []
 
-        # 将输入的红球转换为 DataFrame，并指定列名
-        input_data = pd.DataFrame([input_red_balls], columns=red_ball_columns)
+        for i in range(num_predictions):
+            ### 红球预测 ###
+            # 构造特征列
+            feature_columns = ['prev_redBall1', 'prev_redBall2', 'prev_redBall3', 'prev_redBall4', 'prev_redBall5',
+                               'prev_redBall6', 'prev_blueBall']
 
-        # 构造特征列
-        feature_columns = ['prev_redBall1', 'prev_redBall2', 'prev_redBall3', 'prev_redBall4', 'prev_redBall5', 'prev_redBall6', 'prev_blueBall']
+            # 将输入的红球转换为 DataFrame，并指定列名
+            input_data = pd.DataFrame([input_red_balls], columns=red_ball_columns)
 
-        # 为输入数据构造特征列，并使用默认值填充
-        for col in feature_columns:
-            input_data[col] = 0  # 使用默认值 0 填充
+            # 为输入数据构造特征列，并使用默认值填充
+            for col in feature_columns:
+                input_data[col] = 0  # 使用默认值 0 填充
 
-        for i in range(6):  # 红球有6个
-            # 为每个红球单独创建一个模型
+            # 特征和目标变量
             X = data[feature_columns]  # 特征为前一期的开奖结果
-            y_single = data[red_ball_columns[i]]  # 获取第 i 个红球的历史数据
+            y = data[red_ball_columns]  # 获取所有红球的历史数据
 
-            X_train, X_test, y_train, y_test = train_test_split(X, y_single, test_size=0.2, random_state=42)
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42 + i)  # 使用不同的随机种子
 
-            # 训练随机森林模型
-            model = RandomForestClassifier(n_estimators=100, random_state=42)
-            model.fit(X_train, y_train)
+            # 训练随机森林回归模型
+            red_ball_model = RandomForestRegressor(n_estimators=100, random_state=42 + i)  # 使用不同的随机种子
+            red_ball_model.fit(X_train, y_train)
 
             # 使用训练好的模型预测提供的输入
-            predicted_red_ball = model.predict(input_data[feature_columns])[0]  # 修复警告：输入保持为 DataFrame
-            predicted_red_balls.append(int(predicted_red_ball))
+            predicted_red_balls = red_ball_model.predict(input_data[feature_columns])[0]
+            predicted_red_balls = [int(round(ball)) for ball in predicted_red_balls]  # 将预测结果四舍五入并转换为整数
 
-        ### 蓝球预测 ###
-        # 创建蓝球模型
-        X = data[feature_columns]  # 蓝球特征基于前一期的开奖结果
-        y_blue = data[blue_ball_column]  # 蓝球目标
+            ### 蓝球预测 ###
+            # 创建蓝球模型
+            X = data[feature_columns]  # 蓝球特征基于前一期的开奖结果
+            y_blue = data[blue_ball_column]  # 蓝球目标
 
-        X_train, X_test, y_train, y_test = train_test_split(X, y_blue, test_size=0.2, random_state=42)
+            X_train, X_test, y_train, y_test = train_test_split(X, y_blue, test_size=0.2,
+                                                                random_state=42 + i)  # 使用不同的随机种子
 
-        blue_ball_model = RandomForestClassifier(n_estimators=100, random_state=42)
-        blue_ball_model.fit(X_train, y_train)
+            blue_ball_model = RandomForestRegressor(n_estimators=100, random_state=42 + i)  # 使用不同的随机种子
+            blue_ball_model.fit(X_train, y_train)
 
-        # 使用模型预测蓝球
-        predicted_blue_ball = blue_ball_model.predict(input_data[feature_columns])[0]  # 修复警告：输入保持为 DataFrame
+            # 使用模型预测蓝球
+            predicted_blue_ball = blue_ball_model.predict(input_data[feature_columns])[0]
+            predicted_blue_ball = int(round(predicted_blue_ball))  # 将预测结果四舍五入并转换为整数
+
+            # 将预测结果存储在字典中
+            formatted_predictions.append({
+                'redBalls': predicted_red_balls,
+                'blueBall': predicted_blue_ball
+            })
 
         # 返回结果为字典
-        return {
-            'redBalls': predicted_red_balls,
-            'blueBall': int(predicted_blue_ball)
+        res = {
+            'predictions': formatted_predictions
         }
 
-    def train_and_predict_by_issue(self, data, issue):
+        return res
+
+    def train_and_predict_by_issue(self, data, start_issue, num_predictions=5):
+        """
+        通过期数的尾数后两位作为特征预测下一期的号码
+        输入历史数据 + 起始期数，输出多组预测结果。
+        """
+        # 提取期数的尾数后两位
+        data['issueNumber_last_two'] = data['issueNumber'].apply(lambda x: x % 100)
+
         # 特征和目标变量
-        X = data[['issueNumber']]
+        X = data[['issueNumber_last_two']]
         y_red = data[['redBall1', 'redBall2', 'redBall3', 'redBall4', 'redBall5', 'redBall6']]
-        y_blue = data[['blueBall']]
+        y_blue = data['blueBall']  # 注意这里直接使用 Series 而不是 DataFrame
 
         # 拆分数据集
         X_train, X_test, y_red_train, y_red_test, y_blue_train, y_blue_test = train_test_split(
@@ -93,29 +116,55 @@ class SsqPredict:
         )
 
         # 创建模型
-        red_model = LinearRegression()
-        blue_model = LinearRegression()
+        red_model = RandomForestRegressor(n_estimators=100, random_state=42)
+        blue_model = RandomForestRegressor(n_estimators=100, random_state=42)
 
         # 训练模型
         red_model.fit(X_train, y_red_train)
         blue_model.fit(X_train, y_blue_train)
 
-        # 预测函数
-        # 确保 issue 以 DataFrame 形式传入
-        issue_number_df = pd.DataFrame({'issueNumber': [issue]})  # 使用 DataFrame 形式，确保名称一致
+        # 预测结果列表
+        formatted_predictions = []
 
-        # 在此输入特征进行预测
-        red_balls = red_model.predict(issue_number_df)
-        blue_ball = blue_model.predict(issue_number_df)
+        for i in range(num_predictions):
+            # 计算当前预测的期数
+            current_issue = start_issue + i
 
-        # 使用 map 函数将 red_balls[0] 中的元素都转为整数
-        red_balls_list = list(map(int, red_balls[0]))  # 取整
+            # 提取当前期数的尾数后两位
+            current_issue_last_two = current_issue % 100
+
+            # 确保 issue 以 DataFrame 形式传入
+            issue_number_df = pd.DataFrame({'issueNumber_last_two': [current_issue_last_two]})
+
+            # 在此输入特征进行预测
+            red_balls = red_model.predict(issue_number_df)
+            blue_ball = blue_model.predict(issue_number_df)
+
+            # 使用 map 函数将 red_balls[0] 中的元素都转为整数
+            red_balls_list = list(map(int, red_balls[0]))  # 取整
+
+            # 引入随机性，确保每次预测结果不同
+            red_balls_list = [ball + np.random.randint(-1, 2) for ball in red_balls_list]  # 随机调整红球号码
+            blue_ball = blue_ball[0] + np.random.randint(-1, 2)  # 随机调整蓝球号码
+
+            # 确保红球号码在有效范围内（1-33）
+            red_balls_list = [max(1, min(33, ball)) for ball in red_balls_list]
+
+            # 确保蓝球号码在有效范围内（1-16）
+            blue_ball = max(1, min(16, blue_ball))
+
+            # 将预测结果存储在字典中
+            formatted_predictions.append({
+                'redBalls': red_balls_list,
+                'blueBall': int(blue_ball)
+            })
 
         # 返回结果为字典
-        return {
-            'redBalls': red_balls_list,
-            'blueBall': int(blue_ball[0][0])
+        res = {
+            'predictions': formatted_predictions
         }
+
+        return res
 
 
     '''
@@ -529,5 +578,11 @@ if __name__ == "__main__":
         # for i, prediction in enumerate(predictions_zone, 1):
         #     print(f"预测组 {i}: 红球号码: {prediction['redBalls']}, 蓝球号码: {prediction['blueBall']}")
 
-        predictions_zone=SsqPredict().predictByOther(data)
-        print(predictions_zone)
+        # predictions_zone=SsqPredict().predictByOther(data)
+        # print(predictions_zone)
+
+        input_red_balls = [6,13,17,22,24,29]  # 你的输入红球
+        num_predictions = 5  # 需要预测的组数
+
+        res = SsqPredict().train_and_predict_by_issue(data, 2025011, num_predictions)
+        print(res)
