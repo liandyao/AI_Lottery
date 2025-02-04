@@ -13,7 +13,7 @@ class XingyunqiuConfig(AppConfig):
         self.update_cache()
         # 启动定时任务
         scheduler = BackgroundScheduler()
-        scheduler.add_job(self.update_cache, 'interval', minutes=10)
+        scheduler.add_job(self.update_cache, 'interval', minutes=5)
         scheduler.start()
 
     def update_cache(self):
