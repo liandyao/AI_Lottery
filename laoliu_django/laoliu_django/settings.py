@@ -55,8 +55,8 @@ MIDDLEWARE = [
 
 ]
 # 允许跨域访问
-CORS_ALLOW_ALL_ORIGINS = True
-ALLOWED_HOSTS = ['*']
+#CORS_ALLOW_ALL_ORIGINS = True
+#ALLOWED_HOSTS = ['*']
 
 ROOT_URLCONF = 'laoliu_django.urls'
 
@@ -168,3 +168,4 @@ CACHES = {
         'LOCATION': 'unique-snowflake',
     }
 }
+
