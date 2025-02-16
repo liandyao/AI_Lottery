@@ -49,3 +49,11 @@
     1，同步数据库  python manage.py migrate
     2，创建管理员账号 python manage.py createsuperuser
 
+### 福彩和体彩两种玩法
+
+### 运行
+python manage.py runserver 0.0.0.0:8000
+
+### 测试
+http://127.0.0.1:8000/laoliu/ssq/by_year/
+- 默认显示当前年份的记录
