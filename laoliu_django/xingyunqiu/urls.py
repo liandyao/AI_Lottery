@@ -7,4 +7,5 @@ from . import views  # 显式导入 views.py 文件
 from . import views_ssq
 from . import views_common
 from . import views_fc3d
+from . import views_tcp3
 urlpatterns = urlpatterns

@@ -91,9 +91,36 @@ class fc3dPredict:
         print("每列中间频率的3个数字：", result)
         return result
 
+    def statisticsFrequency(self, df):
+        one_freq = df['one'].value_counts().sort_index().to_dict()
+        two_freq = df['two'].value_counts().sort_index().to_dict()
+        three_freq = df['three'].value_counts().sort_index().to_dict()
+        # 补全所有数字（0-9）的频率
+        for num in range(10):
+            if num not in one_freq:
+                one_freq[num] = 0
+            if num not in two_freq:
+                two_freq[num] = 0
+            if num not in three_freq:
+                three_freq[num] = 0
+
+        # 重新排序
+        one_freq = dict(sorted(one_freq.items()))
+        two_freq = dict(sorted(two_freq.items()))
+        three_freq = dict(sorted(three_freq.items()))
+        # 将结果合并为一个字典
+        result = {
+            'one': one_freq,
+            'two': two_freq,
+            'three': three_freq
+        }
+        return result
+
+
 if __name__ == "__main__":
         # 替换为您的历史双色球数据文件路径
         data = pd.read_csv('../data/fc_3d_2025.csv')
 
-        res = fc3dPredict().predictByFrequencyMiddle(data)
+        res = fc3dPredict().statisticsFrequency(data)
         print(res)
+

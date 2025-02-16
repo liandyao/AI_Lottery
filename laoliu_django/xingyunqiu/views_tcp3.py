@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 from .utils import result_success, result_error  # 导入自定义的 JSON 响应方法
 
-@url('laoliu/fc3d/by_year/', name='fc3d_by_year_api')
+@url('laoliu/tcp3/by_year/', name='tcp3_by_year_api')
 def get_data_by_year(request):
     # 得到传入的year
     num = request.GET.get('num')
@@ -25,7 +25,7 @@ def get_data_by_year(request):
 
     num = int(num)
         # 使用全局变量中的数据
-    df =   cache.get('fc3d_data_all')
+    df =   cache.get('tcp3_data_all')
     if df is None:
         logger.error("缓存中的数据为空")
         return result_error(None, message='缓存中的数据为空')
@@ -36,10 +36,10 @@ def get_data_by_year(request):
 
     return result_success(data)
 
-@url('laoliu/fc3d/predict/', name='fc3d_predict_api')
+@url('laoliu/tcp3/predict/', name='tcp3_predict_api')
 def predict(request):
     type = request.GET.get('type')
-    df = cache.get('fc3d_data_all')
+    df = cache.get('tcp3_data_all')
     if df is None:
         logger.error("缓存中的数据为空")
         return result_error(None, message='缓存中的数据为空')
@@ -60,13 +60,13 @@ def predict(request):
 
     return result_success(res)
 
-@url('laoliu/fc3d/statisticsFrequency/', name='fc3d_statisticsFrequency_api')
+@url('laoliu/tcp3/statisticsFrequency/', name='tcp3_statisticsFrequency_api')
 def statisticsFrequency(request):
     num = request.GET.get('num') # 期数
     if num is None:
         num = 100
     num = int(num)
-    df = cache.get('fc3d_data_all')
+    df = cache.get('tcp3_data_all')
     data = df.head(num)
     res = fc3dPredict().statisticsFrequency(data)
     print(res)
